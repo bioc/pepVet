@@ -303,6 +303,20 @@ test_that("plot_pI_distribution: custom fraction_breaks accepted", {
   p <- plot_pI_distribution(res, fraction_breaks = c(4, 6, 8, 10))
   expect_s3_class(p, "ggplot")
   expect_equal(p$scales$get_scales("fill")$name, "SCX fraction")
+  expect_identical(
+    levels(p$data$bin),
+    c("< 4", "4\u20136", "6\u20138", "8\u201310", "> 10")
+  )
+
+  annotation_data <- Filter(
+    function(data) {
+      is.data.frame(data) &&
+        all(c("pI", "count", "bin", "label") %in% names(data))
+    },
+    lapply(p$layers, function(layer) layer$data)
+  )
+  expect_length(annotation_data, 1L)
+  expect_identical(annotation_data[[1L]]$pI, c(3, 5, 7, 9, 11))
 })
 
 test_that("plot_pI_distribution: custom title is accepted", {

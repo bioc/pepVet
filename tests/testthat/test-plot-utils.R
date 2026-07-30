@@ -194,6 +194,65 @@ test_that("coverage and sequence helpers use coordinate semantics", {
   expect_s3_class(gravy_panel, "ggplot")
 })
 
+test_that("interval coverage matches direct residue counting", {
+  starts <- c(1L, 3L, 3L, 7L)
+  ends <- c(4L, 5L, 8L, 12L)
+  protein_length <- 10L
+  expected_counts <- integer(protein_length)
+  for (index in seq_along(starts)) {
+    positions <- seq.int(starts[[index]], min(ends[[index]], protein_length))
+    expected_counts[positions] <- expected_counts[positions] + 1L
+  }
+
+  expect_identical(
+    .interval_coverage(starts, ends, protein_length, counts = TRUE),
+    expected_counts
+  )
+  expect_identical(
+    .interval_coverage(starts, ends, protein_length),
+    expected_counts > 0L
+  )
+  expect_identical(
+    .interval_coverage(integer(), integer(), protein_length, counts = TRUE),
+    integer(protein_length)
+  )
+})
+
+test_that("coverage panel filters all peptide layers before classification", {
+  peps <- data.frame(
+    protein_id = rep("synthetic", 4L),
+    peptide = c("ABC", "DEFG", "ABCDEFG", "BCDE"),
+    start = c(1L, 4L, 1L, 2L),
+    end = c(3L, 7L, 7L, 5L),
+    length = c(3L, 4L, 7L, 4L),
+    missed_cleavages = c(0L, 0L, 1L, 1L),
+    stringsAsFactors = FALSE
+  )
+  panel <- .panel_coverage(
+    peps,
+    protein_length = 7L,
+    length_range = c(3L, 3L),
+    missed_cleavages = 0L
+  )
+  peptide_layers <- Filter(
+    function(data) {
+      is.data.frame(data) && "missed_cleavages" %in% names(data)
+    },
+    lapply(panel$layers, function(layer) layer$data)
+  )
+
+  expect_gte(length(peptide_layers), 2L)
+  expect_true(all(vapply(
+    peptide_layers,
+    function(data) all(data$missed_cleavages == 0L),
+    logical(1L)
+  )))
+  expect_setequal(
+    unique(unlist(lapply(peptide_layers, function(data) data$start))),
+    c(1L, 4L)
+  )
+})
+
 test_that("layout helpers pack intervals and reserve tick space", {
   peps <- data.frame(start = c(1L, 2L, 5L), end = c(4L, 3L, 6L))
   packed <- .pack_peptides(peps)

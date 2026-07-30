@@ -952,28 +952,19 @@ pepvet_preset <- function(type = "standard") {
     ))
   }
 
-  ## Pre-allocate output vectors (avoids repeated list reallocation).
-  total_rows <- sum(vapply(
-    seq_len(peptide_count),
-    function(i) min(missed_cleavages, peptide_count - i) + 1L,
-    integer(1)
-  ))
-  out_starts <- integer(total_rows)
-  out_ends <- integer(total_rows)
-  out_mc <- integer(total_rows)
-  k <- 1L
+  ## Repeat each start once for every reachable downstream cleavage boundary.
+  counts <- pmin.int(
+    missed_cleavages,
+    peptide_count - seq_len(peptide_count)
+  ) + 1L
+  start_index <- rep.int(seq_len(peptide_count), counts)
+  out_mc <- sequence(counts) - 1L
 
-  for (si in seq_len(peptide_count)) {
-    max_mc <- min(missed_cleavages, peptide_count - si)
-    for (mc in 0L:max_mc) {
-      out_starts[k] <- range_starts[[si]]
-      out_ends[k] <- range_ends[[si + mc]]
-      out_mc[k] <- mc
-      k <- k + 1L
-    }
-  }
-
-  list(start = out_starts, end = out_ends, missed_cleavages = out_mc)
+  list(
+    start = range_starts[start_index],
+    end = range_ends[start_index + out_mc],
+    missed_cleavages = out_mc
+  )
 }
 
 ## Cached hydrophobicity lookup table (AA -> Kyte-Doolittle score).

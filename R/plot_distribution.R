@@ -1113,14 +1113,13 @@ plot_pI_distribution <- function(
   hi_break <- breaks[[length(breaks)]]
 
   ## Build label vector: "<lo", "lo-b2", "b2-b3", ..., ">hi"
-  bin_labels <- character(length(breaks) + 1L)
-  bin_labels[[1L]] <- sprintf("< %.0f", lo_break)
-  for (i in seq_len(length(breaks) - 1L)) {
-    bin_labels[[i + 1L]] <- sprintf(
-      "%.0f\u2013%.0f", breaks[[i]], breaks[[i + 1L]]
-    )
-  }
-  bin_labels[[length(bin_labels)]] <- sprintf("> %.0f", hi_break)
+  lower_breaks <- breaks[-length(breaks)]
+  upper_breaks <- breaks[-1L]
+  bin_labels <- c(
+    sprintf("< %.0f", lo_break),
+    sprintf("%.0f\u2013%.0f", lower_breaks, upper_breaks),
+    sprintf("> %.0f", hi_break)
+  )
 
   all_breaks <- c(-Inf, breaks, Inf)
   pI_bin <- cut(pI_vals,
@@ -1132,16 +1131,13 @@ plot_pI_distribution <- function(
 
   ## Fraction count annotation data
   bin_counts <- as.integer(table(pI_bin))
-  n_bins <- length(bin_labels)
-
   ## Mid-x for each label: for <lo and >hi, place 1 unit outside;
   ##   for intervals, mid-point
-  bin_mids <- numeric(n_bins)
-  bin_mids[[1L]] <- lo_break - 1
-  for (i in seq_len(length(breaks) - 1L)) {
-    bin_mids[[i + 1L]] <- (breaks[[i]] + breaks[[i + 1L]]) / 2
-  }
-  bin_mids[[n_bins]] <- hi_break + 1
+  bin_mids <- c(
+    lo_break - 1,
+    (lower_breaks + upper_breaks) / 2,
+    hi_break + 1
+  )
 
   ann_df <- data.frame(
     pI    = bin_mids,
@@ -1151,7 +1147,7 @@ plot_pI_distribution <- function(
   )
 
   ## Colours: viridis-based sequential across bins
-  n_colours <- n_bins
+  n_colours <- length(bin_labels)
   ## Use a hand-picked sequential palette that works with the pepVet brand
   ## Acidic (low pI) to cool blues; basic (high pI) to warm orange-reds
   viridis_cols <- grDevices::hcl.colors(

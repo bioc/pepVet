@@ -263,6 +263,51 @@ test_that("build_digest_ranges enumerates adjacent missed-cleavage intervals", {
   ))
 })
 
+test_that("build_digest_ranges matches explicit valid boundary pairs", {
+  withr::local_seed(20260730)
+
+  for (case in seq_len(100L)) {
+    peptide_count <- sample.int(30L, 1L)
+    widths <- sample.int(15L, peptide_count, replace = TRUE)
+    range_ends <- cumsum(widths)
+    range_starts <- c(1L, head(range_ends, -1L) + 1L)
+    missed_cleavages <- sample.int(12L, 1L) - 1L
+    strict_ranges <- IRanges::IRanges(
+      start = range_starts,
+      end = range_ends
+    )
+
+    boundary_pairs <- which(
+      outer(
+        seq_len(peptide_count),
+        seq_len(peptide_count),
+        function(start_index, end_index) {
+          end_index >= start_index &
+            end_index - start_index <= missed_cleavages
+        }
+      ),
+      arr.ind = TRUE
+    )
+    boundary_pairs <- boundary_pairs[
+      order(boundary_pairs[, 1L], boundary_pairs[, 2L]), ,
+      drop = FALSE
+    ]
+    expected <- list(
+      start = range_starts[boundary_pairs[, 1L]],
+      end = range_ends[boundary_pairs[, 2L]],
+      missed_cleavages = as.integer(
+        boundary_pairs[, 2L] - boundary_pairs[, 1L]
+      )
+    )
+
+    expect_identical(
+      pepVet:::.build_digest_ranges(strict_ranges, missed_cleavages),
+      expected,
+      info = paste("random case", case)
+    )
+  }
+})
+
 test_that("hydrophobicity lookup caching has explicit missing-value behavior", {
   cache <- get(".pepvet_cache", envir = asNamespace("pepVet"))
   had_cached_lookup <- exists(

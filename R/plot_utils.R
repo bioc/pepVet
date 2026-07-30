@@ -685,6 +685,28 @@ NULL
 }
 
 
+#' Count interval coverage with a difference array
+#'
+#' @param starts Integer interval starts.
+#' @param ends Integer interval ends.
+#' @param protein_length Positive integer protein length.
+#' @param counts Logical. Return integer counts instead of a logical vector.
+#' @return An integer count vector or logical coverage vector.
+#' @noRd
+.interval_coverage <- function(starts, ends, protein_length, counts = FALSE) {
+  clipped_ends <- pmin.int(ends, protein_length)
+  deltas <- tabulate(starts, nbins = protein_length + 1L) -
+    tabulate(clipped_ends + 1L, nbins = protein_length + 1L)
+  coverage_counts <- cumsum(deltas)[seq_len(protein_length)]
+
+  if (counts) {
+    coverage_counts
+  } else {
+    coverage_counts > 0L
+  }
+}
+
+
 #' Compute coverage statistics from a peptide table (shared helper)
 #'
 #' Splits peptides into valid/invalid sets, computes per-residue coverage,
@@ -718,12 +740,11 @@ NULL
     valid_peps
   }
 
-  covered <- rep(FALSE, protein_length)
-  for (i in seq_len(nrow(cov_peps))) {
-    s <- cov_peps$start[[i]]
-    e <- min(cov_peps$end[[i]], protein_length)
-    covered[seq.int(s, e)] <- TRUE
-  }
+  covered <- .interval_coverage(
+    cov_peps$start,
+    cov_peps$end,
+    protein_length
+  )
   pct_cov <- round(100 * sum(covered) / protein_length, 1L)
 
   rl <- rle(covered)
@@ -835,7 +856,6 @@ NULL
                                       missed_cleavages = 1L,
                                       residues_per_line = 50L) {
   protein_sequence <- .reconstruct_sequence_from_peptides(peps)
-  overlap_counts <- integer(protein_length)
 
   ## When length_range is NULL, count all MC levels (user opted in).
   ## Otherwise filter to the specified MC level (default 1L).
@@ -860,16 +880,12 @@ NULL
     ]
   }
 
-  if (nrow(overlap_peps) > 0L) {
-    for (index in seq_len(nrow(overlap_peps))) {
-      residue_positions <- seq.int(
-        overlap_peps$start[[index]],
-        overlap_peps$end[[index]]
-      )
-      overlap_counts[residue_positions] <-
-        overlap_counts[residue_positions] + 1L
-    }
-  }
+  overlap_counts <- .interval_coverage(
+    overlap_peps$start,
+    overlap_peps$end,
+    protein_length,
+    counts = TRUE
+  )
 
   residue_positions <- seq_len(protein_length)
   residues <- strsplit(protein_sequence, "", fixed = TRUE)[[1L]]
@@ -978,40 +994,21 @@ NULL
 #' @noRd
 .panel_coverage <- function(peps, protein_length, length_range,
                             missed_cleavages = NULL) {
-  length_lo <- length_range[[1L]]
-  length_hi <- length_range[[2L]]
-
   ## Filter to the requested MC level only
   has_mc <- "missed_cleavages" %in% names(peps)
   if (has_mc && !is.null(missed_cleavages)) {
     peps <- peps[peps$missed_cleavages == missed_cleavages, , drop = FALSE]
   }
 
-  valid_peps <- peps[peps$length >= length_lo & peps$length <= length_hi, ,
-    drop = FALSE
-  ]
-  invalid_peps <- peps[peps$length < length_lo | peps$length > length_hi, ,
-    drop = FALSE
-  ]
-
-  ## Coverage from valid peptides at this MC level
-  covered <- rep(FALSE, protein_length)
-  for (i in seq_len(nrow(valid_peps))) {
-    s <- valid_peps$start[[i]]
-    e <- min(valid_peps$end[[i]], protein_length)
-    covered[seq.int(s, e)] <- TRUE
-  }
-  pct_cov <- round(100 * sum(covered) / protein_length, 1L)
-
-  ## Gap regions (residue-level uncovered runs)
-  rl <- rle(covered)
-  rl_ends <- cumsum(rl$lengths)
-  rl_starts <- c(1L, head(rl_ends, -1L) + 1L)
-  gap_mask <- !rl$values
-  gap_df <- data.frame(
-    xmin = rl_starts[gap_mask],
-    xmax = rl_ends[gap_mask]
+  coverage_stats <- .compute_coverage_stats(
+    peps,
+    protein_length,
+    length_range
   )
+  valid_peps <- coverage_stats$valid_peps
+  invalid_peps <- coverage_stats$invalid_peps
+  pct_cov <- coverage_stats$pct_cov
+  gap_df <- coverage_stats$gap_df
   n_gaps <- nrow(gap_df)
   n_small <- sum((gap_df$xmax - gap_df$xmin + 1L) <= 3L)
 
