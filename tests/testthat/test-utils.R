@@ -1,5 +1,87 @@
 data("aa_properties", package = "pepVet", envir = environment())
 
+test_that("score column helpers preserve canonical order and optional scores", {
+  protein_only <- data.frame(
+    S_charge = 0.2,
+    S_length = 0.3,
+    composite_score = 0.25
+  )
+  proteome_aware <- protein_only
+  proteome_aware$S_unique <- 0.8
+
+  expect_identical(
+    .score_component_columns(protein_only),
+    c("S_length", "S_coverage", "S_count", "S_hydro", "S_charge")
+  )
+  expect_identical(
+    .score_component_columns(proteome_aware),
+    c(
+      "S_length", "S_coverage", "S_count", "S_hydro", "S_charge",
+      "S_unique"
+    )
+  )
+  expect_identical(
+    tail(.score_value_columns(proteome_aware), 2L),
+    c("S_unique", "composite_score")
+  )
+})
+
+test_that("column predicates distinguish type, finiteness, and score bounds", {
+  values <- data.frame(
+    numeric = c(0, 1),
+    integer = c(0L, 1L),
+    text = c("0", "1"),
+    missing = c(0, NA_real_),
+    nonfinite = c(0, Inf),
+    outside = c(-0.1, 1.1)
+  )
+
+  expect_true(.columns_are_numeric(values, c("numeric", "integer")))
+  expect_false(.columns_are_numeric(values, c("numeric", "text")))
+  expect_true(.columns_are_finite(values, c("numeric", "integer")))
+  expect_false(.columns_are_finite(values, "text"))
+  expect_false(.columns_are_finite(values, "missing"))
+  expect_false(.columns_are_finite(values, "nonfinite"))
+  expect_true(.columns_are_in_unit_interval(values, c("numeric", "integer")))
+  expect_false(.columns_are_in_unit_interval(values, "text"))
+  expect_false(.columns_are_in_unit_interval(values, "missing"))
+  expect_false(.columns_are_in_unit_interval(values, "nonfinite"))
+  expect_false(.columns_are_in_unit_interval(values, "outside"))
+})
+
+test_that("shared scalar predicates preserve nullable domain policies", {
+  expect_true(.is_nonempty_file_path("output.csv"))
+  for (path in list(NULL, character(), NA_character_, "", "   ", 1)) {
+    expect_false(.is_nonempty_file_path(path))
+  }
+
+  expect_identical(
+    .validate_nullable_title(
+      NULL,
+      class = "pepvet_error_invalid_report_input",
+      call = rlang::current_env()
+    ),
+    NULL
+  )
+  expect_identical(.validate_plot_title(""), "")
+
+  classes <- c(
+    "pepvet_error_invalid_report_input",
+    "pepvet_error_invalid_input",
+    "pepvet_error_invalid_diagnostics_input"
+  )
+  for (class in classes) {
+    expect_error(
+      .validate_nullable_title(
+        NA_character_,
+        class = class,
+        call = rlang::current_env()
+      ),
+      class = class
+    )
+  }
+})
+
 test_that(
   "range validators normalize valid boundaries and reject invalid ranges",
   {

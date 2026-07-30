@@ -664,13 +664,7 @@ batch_evaluate <- function(sequences,
     )
   }
 
-  numeric_cols <- c(
-    "S_length", "S_coverage", "S_count", "S_hydro", "S_charge",
-    "composite_score"
-  )
-  if ("S_unique" %in% names(batch_result)) {
-    numeric_cols <- c(numeric_cols, "S_unique")
-  }
+  numeric_cols <- .score_value_columns(batch_result)
   if (!is.character(batch_result$protein_id) ||
       !is.character(batch_result$verdict)) {
     .abort(
@@ -688,7 +682,7 @@ batch_evaluate <- function(sequences,
     )
   }
 
-  if (!all(vapply(batch_result[numeric_cols], is.numeric, logical(1)))) {
+  if (!.columns_are_numeric(batch_result, numeric_cols)) {
     .abort(
       "{.arg batch_result} score columns must be numeric.",
       class = "pepvet_error_invalid_batch_result"
@@ -706,15 +700,9 @@ batch_evaluate <- function(sequences,
     )
   }
 
-  has_invalid_score <- vapply(
-    batch_result[numeric_cols],
-    function(values) {
-      anyNA(values) || any(!is.finite(values)) ||
-        any(values < 0 | values > 1)
-    },
-    logical(1)
-  )
-  if (any(has_invalid_score) || anyNA(batch_result$verdict) ||
+  has_invalid_score <- !.columns_are_finite(batch_result, numeric_cols) ||
+    !.columns_are_in_unit_interval(batch_result, numeric_cols)
+  if (has_invalid_score || anyNA(batch_result$verdict) ||
       any(!batch_result$verdict %in% c("Good", "Moderate", "Poor")) ||
       any(vapply(batch_result[flag_cols], anyNA, logical(1)))) {
     .abort(
@@ -1344,28 +1332,17 @@ triage_proteins <- function(batch_result) {
     )
   }
 
-  numeric_cols <- c(
-    "S_length", "S_coverage", "S_count", "S_hydro", "S_charge",
-    "composite_score"
-  )
-  if ("S_unique" %in% names(score_table)) {
-    numeric_cols <- c(numeric_cols, "S_unique")
-  }
-  if (!all(vapply(score_table[numeric_cols], is.numeric, logical(1)))) {
+  numeric_cols <- .score_value_columns(score_table)
+  if (!.columns_are_numeric(score_table, numeric_cols)) {
     .abort(
       "{.arg x} score columns must be numeric.",
       class = "pepvet_error_invalid_input"
     )
   }
 
-  if (any(vapply(
-    score_table[numeric_cols],
-    function(values) {
-      anyNA(values) || any(!is.finite(values)) ||
-        any(values < 0 | values > 1)
-    },
-    logical(1)
-  )) || anyNA(score_table$verdict) ||
+  if (!.columns_are_finite(score_table, numeric_cols) ||
+      !.columns_are_in_unit_interval(score_table, numeric_cols) ||
+      anyNA(score_table$verdict) ||
       any(!score_table$verdict %in% c("Good", "Moderate", "Poor"))) {
     .abort(
       "{.arg x} contains invalid score or verdict values.",

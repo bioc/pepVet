@@ -173,6 +173,14 @@
   ]
 }
 
+.resolve_valid_digest <- function(protein_digest, length_range, valid_digest) {
+  if (is.null(valid_digest)) {
+    return(.extract_valid_digest(protein_digest, length_range))
+  }
+
+  valid_digest
+}
+
 .fallback_expected_peptide_length <- function(enzyme = "trypsin") {
   fallback_groups <- list(
     `12` = c("trypsin", "trypsin-high", "trypsin-low", "trypsin-simple"),
@@ -213,9 +221,9 @@
 .score_coverage <- function(protein_digest,
                              length_range = c(7L, 25L),
                              valid_digest = NULL) {
-  if (is.null(valid_digest)) {
-    valid_digest <- .extract_valid_digest(protein_digest, length_range)
-  }
+  valid_digest <- .resolve_valid_digest(
+    protein_digest, length_range, valid_digest
+  )
 
   if (nrow(valid_digest) == 0L) {
     return(0)
@@ -251,9 +259,9 @@
     return(0)
   }
 
-  if (is.null(valid_digest)) {
-    valid_digest <- .extract_valid_digest(protein_digest, length_range)
-  }
+  valid_digest <- .resolve_valid_digest(
+    protein_digest, length_range, valid_digest
+  )
   valid_count <- nrow(valid_digest)
   protein_length <- max(protein_digest$end)
   expected_count <- protein_length /
@@ -266,9 +274,9 @@
                          gravy_range = c(-1.0, 0.6),
                          length_range = c(7L, 25L),
                          valid_digest = NULL) {
-  if (is.null(valid_digest)) {
-    valid_digest <- .extract_valid_digest(protein_digest, length_range)
-  }
+  valid_digest <- .resolve_valid_digest(
+    protein_digest, length_range, valid_digest
+  )
 
   if (nrow(valid_digest) == 0L) {
     return(0)
@@ -288,9 +296,9 @@
 .score_charge <- function(protein_digest,
                            length_range = c(7L, 25L),
                            valid_digest = NULL) {
-  if (is.null(valid_digest)) {
-    valid_digest <- .extract_valid_digest(protein_digest, length_range)
-  }
+  valid_digest <- .resolve_valid_digest(
+    protein_digest, length_range, valid_digest
+  )
 
   if (nrow(valid_digest) == 0L) {
     return(0)
@@ -310,9 +318,9 @@
                           proteome_index,
                           length_range = c(7L, 25L),
                           valid_digest = NULL) {
-  if (is.null(valid_digest)) {
-    valid_digest <- .extract_valid_digest(protein_digest, length_range)
-  }
+  valid_digest <- .resolve_valid_digest(
+    protein_digest, length_range, valid_digest
+  )
 
   if (nrow(valid_digest) == 0L) {
     return(0)

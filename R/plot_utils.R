@@ -216,17 +216,11 @@ NULL
 }
 
 .validate_plot_title <- function(title) {
-  if (
-    !is.null(title) &&
-      (!is.character(title) || length(title) != 1L || is.na(title))
-  ) {
-    .abort(
-      "{.arg title} must be a single character string or {.val NULL}.",
-      class = "pepvet_error_invalid_input"
-    )
-  }
-
-  invisible(title)
+  .validate_nullable_title(
+    title,
+    class = "pepvet_error_invalid_input",
+    call = rlang::caller_env()
+  )
 }
 
 #' Length-class color map
@@ -347,23 +341,11 @@ NULL
     class = "pepvet_error_invalid_digest_result"
   )
 
-  score_cols <- c(
-    "S_length", "S_coverage", "S_count", "S_hydro", "S_charge",
-    "composite_score"
-  )
-  if ("S_unique" %in% names(result$scores)) {
-    score_cols <- c(score_cols, "S_unique")
-  }
+  score_cols <- .score_value_columns(result$scores)
   if (!all(score_cols %in% names(result$scores)) ||
-      !all(vapply(result$scores[score_cols], is.numeric, logical(1L))) ||
-      any(vapply(
-        result$scores[score_cols],
-        function(values) {
-          anyNA(values) || any(!is.finite(values)) ||
-            any(values < 0 | values > 1)
-        },
-        logical(1L)
-      ))) {
+      !.columns_are_numeric(result$scores, score_cols) ||
+      !.columns_are_finite(result$scores, score_cols) ||
+      !.columns_are_in_unit_interval(result$scores, score_cols)) {
     .abort(
       "{.code result$scores} contains missing, non-finite, or out-of-range score columns.",
       class = "pepvet_error_invalid_digest_result"
@@ -1171,10 +1153,7 @@ NULL
 #' @return A ggplot object.
 #' @noRd
 .panel_scores <- function(scores) {
-  score_cols <- c("S_length", "S_coverage", "S_count", "S_hydro", "S_charge")
-  if ("S_unique" %in% names(scores)) {
-    score_cols <- c(score_cols, "S_unique")
-  }
+  score_cols <- .score_component_columns(scores)
   score_cols <- score_cols[score_cols %in% names(scores)]
 
   score_labels <- c(
@@ -1293,22 +1272,39 @@ NULL
 
 ## Public API
 
-.validate_plot_palette <- function(palette, current_palette) {
-  if (!is.list(palette) || is.null(names(palette))) {
+.validate_plot_config_keys <- function(values, current, arg_name, item_name,
+                                       call) {
+  if (!is.list(values) || is.null(names(values))) {
     .abort(
-      "{.arg palette} must be a named list.",
-      class = "pepvet_error_invalid_config"
+      "{.arg {arg_name}} must be a named list.",
+      class = "pepvet_error_invalid_config",
+      call = call,
+      .envir = rlang::current_env()
     )
   }
 
-  unknown <- setdiff(names(palette), names(current_palette))
+  unknown <- setdiff(names(values), names(current))
   if (length(unknown) > 0L) {
     .abort(
-      "Unknown palette {.field {unknown}}.",
-      "i" = "Valid names: {.val {names(current_palette)}}.",
-      class = "pepvet_error_invalid_config"
+      paste0("Unknown ", item_name, " {.field {unknown}}."),
+      "i" = "Valid names: {.val {names(current)}}.",
+      class = "pepvet_error_invalid_config",
+      call = call,
+      .envir = rlang::current_env()
     )
   }
+
+  invisible(values)
+}
+
+.validate_plot_palette <- function(palette, current_palette) {
+  .validate_plot_config_keys(
+    palette,
+    current_palette,
+    arg_name = "palette",
+    item_name = "palette",
+    call = rlang::caller_env()
+  )
 
   for (name in names(palette)) {
     value <- palette[[name]]
@@ -1345,21 +1341,13 @@ NULL
 }
 
 .validate_plot_params <- function(params, current_params) {
-  if (!is.list(params) || is.null(names(params))) {
-    .abort(
-      "{.arg params} must be a named list.",
-      class = "pepvet_error_invalid_config"
-    )
-  }
-
-  unknown <- setdiff(names(params), names(current_params))
-  if (length(unknown) > 0L) {
-    .abort(
-      "Unknown param {.field {unknown}}.",
-      "i" = "Valid names: {.val {names(current_params)}}.",
-      class = "pepvet_error_invalid_config"
-    )
-  }
+  .validate_plot_config_keys(
+    params,
+    current_params,
+    arg_name = "params",
+    item_name = "param",
+    call = rlang::caller_env()
+  )
 
   integer_params <- c("length_lo", "length_hi", "scatter_max_pts")
   validated <- params
@@ -1553,13 +1541,7 @@ pepvet_plot_config_reset <- function() {
 
 
 .validate_figure_path <- function(filename) {
-  if (
-    !is.character(filename) ||
-      length(filename) != 1L ||
-      is.na(filename) ||
-      !nzchar(trimws(filename)) ||
-      any(as.integer(charToRaw(filename)) == 0L)
-  ) {
+  if (!.is_nonempty_file_path(filename)) {
     .abort(
       "{.arg filename} must be a single non-empty file path.",
       class = "pepvet_error_invalid_plot"

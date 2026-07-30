@@ -1,7 +1,3 @@
-.report_component_columns <- c(
-  "S_length", "S_coverage", "S_count", "S_hydro", "S_charge"
-)
-
 .verdict_colour <- function(verdict, text) {
   if (length(verdict) != 1L || is.na(verdict)) {
     return(text)
@@ -113,20 +109,6 @@
   }
 }
 
-.validate_report_title <- function(title) {
-  if (
-    !is.null(title) &&
-      (!is.character(title) || length(title) != 1L || is.na(title))
-  ) {
-    .abort(
-      "{.arg title} must be a single character string or {.val NULL}.",
-      class = "pepvet_error_invalid_report_input"
-    )
-  }
-
-  invisible(title)
-}
-
 .validate_report_score_table <- function(scores) {
   if (!inherits(scores, "data.frame") || nrow(scores) == 0L) {
     .abort(
@@ -143,7 +125,7 @@
   }
 
   required <- c(
-    "protein_id", .report_component_columns,
+    "protein_id", .base_score_component_columns,
     "composite_score", "verdict"
   )
   missing_columns <- setdiff(required, names(scores))
@@ -170,34 +152,26 @@
   }
 
   numeric_columns <- c(
-    .report_component_columns,
+    .base_score_component_columns,
     "composite_score",
     if ("S_unique" %in% names(scores)) "S_unique"
   )
 
-  if (!all(vapply(scores[numeric_columns], is.numeric, logical(1)))) {
+  if (!.columns_are_numeric(scores, numeric_columns)) {
     .abort(
       "The report score table must contain numeric score columns.",
       class = "pepvet_error_invalid_report_input"
     )
   }
 
-  if (any(vapply(
-    scores[numeric_columns],
-    function(values) anyNA(values) || any(!is.finite(values)),
-    logical(1)
-  ))) {
+  if (!.columns_are_finite(scores, numeric_columns)) {
     .abort(
       "The report score table must contain finite score values.",
       class = "pepvet_error_invalid_report_input"
     )
   }
 
-  if (any(vapply(
-    scores[numeric_columns],
-    function(values) any(values < 0) || any(values > 1),
-    logical(1)
-  ))) {
+  if (!.columns_are_in_unit_interval(scores, numeric_columns)) {
     .abort(
       "The report score table must contain scores between 0 and 1.",
       class = "pepvet_error_invalid_report_input"
@@ -311,7 +285,7 @@
 
 .validate_report_comparison <- function(comparison) {
   required <- c(
-    "enzyme", "protein_id", .report_component_columns,
+    "enzyme", "protein_id", .base_score_component_columns,
     "composite_score", "verdict"
   )
   missing_columns <- setdiff(required, names(comparison))
@@ -358,7 +332,7 @@
     "%-17s%5s  %s", "Component", "Score", "Profile"
   )))
 
-  component_columns <- .report_component_columns
+  component_columns <- .base_score_component_columns
   if ("S_unique" %in% names(scores_row)) {
     component_columns <- c(component_columns, "S_unique")
   }
@@ -491,7 +465,11 @@
 #' @export
 # nolint start: object_usage_linter.
 digest_report <- function(x, title = NULL) {
-  .validate_report_title(title)
+  .validate_nullable_title(
+    title,
+    class = "pepvet_error_invalid_report_input",
+    call = rlang::current_env()
+  )
 
   is_evaluate_result <- is.list(x) && !is.data.frame(x) &&
     any(c("scores", "peptides", "params") %in% names(x))

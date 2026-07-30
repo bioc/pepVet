@@ -133,12 +133,11 @@ export_peptide_list <- function(peptides,
     )
   }
 
-  if (anyDuplicated(names(peptides)) > 0L) {
-    .abort(
-      "{.arg peptides} must have unique column names.",
-      class = "pepvet_error_invalid_export_input"
-    )
-  }
+  .validate_unique_columns(
+    peptides,
+    "peptides",
+    class = "pepvet_error_invalid_export_input"
+  )
 
   required <- c("protein_id", "peptide", "length")
   missing_cols <- setdiff(required, names(peptides))
@@ -259,13 +258,7 @@ export_peptide_list <- function(peptides,
     return(NULL)
   }
 
-  if (
-    !is.character(file) ||
-      length(file) != 1L ||
-      is.na(file) ||
-      !nzchar(trimws(file)) ||
-      any(as.integer(charToRaw(file)) == 0L)
-  ) {
+  if (!.is_nonempty_file_path(file)) {
     .abort(
       "{.arg file} must be a non-empty file path string or {.val NULL}.",
       class = "pepvet_error_invalid_file"

@@ -284,6 +284,10 @@ test_that("plot configuration validators enforce shape and relationships", {
     .validate_plot_palette(c(brand = "#000000"), current),
     class = "pepvet_error_invalid_config"
   )
+  expect_error(
+    .validate_plot_palette(list(unknown = "#000000"), current),
+    class = "pepvet_error_invalid_config"
+  )
 
   params <- .validate_plot_params(
     list(length_lo = 8, length_hi = 24, verdict_good = 0.7),
@@ -298,6 +302,10 @@ test_that("plot configuration validators enforce shape and relationships", {
   )
   expect_error(
     .validate_plot_params(c(verdict_good = 0.7), .pepvet_params),
+    class = "pepvet_error_invalid_config"
+  )
+  expect_error(
+    .validate_plot_params(list(unknown = 1), .pepvet_params),
     class = "pepvet_error_invalid_config"
   )
 })

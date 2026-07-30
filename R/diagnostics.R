@@ -8,10 +8,7 @@
 ## Component color palette shared between diagnostics and visualization
 
 .diagnostic_known_components <- function() {
-  unique(c(
-    names(.default_scoring_weights$protein_only),
-    names(.default_scoring_weights$proteome_aware)
-  ))
+  .all_score_component_columns
 }
 
 .validate_diagnostic_batch_result <- function(batch_result) {
@@ -61,23 +58,15 @@
     )
   }
 
-  if (!all(vapply(batch_result[comp_cols], is.numeric, logical(1)))) {
+  if (!.columns_are_numeric(batch_result, comp_cols)) {
     .abort(
       "Component score columns in {.arg batch_result} must be numeric.",
       class = "pepvet_error_invalid_diagnostics_input"
     )
   }
 
-  if (any(vapply(
-    batch_result[comp_cols],
-    function(values) {
-      anyNA(values) ||
-        any(!is.finite(values)) ||
-        any(values < 0) ||
-        any(values > 1)
-    },
-    logical(1)
-  ))) {
+  if (!.columns_are_finite(batch_result, comp_cols) ||
+      !.columns_are_in_unit_interval(batch_result, comp_cols)) {
     .abort(
       "Component scores in {.arg batch_result} must be finite values between 0 and 1.",
       class = "pepvet_error_invalid_diagnostics_input"
@@ -379,20 +368,6 @@ score_diagnostics <- function(batch_result, weights = NULL) {
 }
 
 
-.validate_diagnostic_title <- function(title) {
-  if (
-    !is.null(title) &&
-      (!is.character(title) || length(title) != 1L || is.na(title))
-  ) {
-    .abort(
-      "{.arg title} must be a single character string or {.val NULL}.",
-      class = "pepvet_error_invalid_diagnostics_input"
-    )
-  }
-
-  invisible(title)
-}
-
 .validate_diagnostic_result <- function(x) {
   required <- c(
     "vif", "pca", "ablation", "n_proteins", "n_components", "weights"
@@ -592,7 +567,11 @@ score_diagnostics <- function(batch_result, weights = NULL) {
 #' }
 #' @export
 plot_score_diagnostics <- function(x, title = NULL) {
-  .validate_diagnostic_title(title)
+  .validate_nullable_title(
+    title,
+    class = "pepvet_error_invalid_diagnostics_input",
+    call = rlang::current_env()
+  )
   .validate_diagnostic_result(x)
 
   rlang::check_installed("ggplot2",

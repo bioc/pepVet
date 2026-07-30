@@ -96,6 +96,31 @@ NULL
   )
 )
 
+.base_score_component_columns <- names(
+  .default_scoring_weights$protein_only
+)
+
+.all_score_component_columns <- unique(c(
+  .base_score_component_columns,
+  names(.default_scoring_weights$proteome_aware)
+))
+
+.score_component_columns <- function(data) {
+  optional_columns <- setdiff(
+    .all_score_component_columns,
+    .base_score_component_columns
+  )
+  present_optional <- optional_columns[
+    optional_columns %in% names(data)
+  ]
+
+  c(.base_score_component_columns, present_optional)
+}
+
+.score_value_columns <- function(data) {
+  c(.score_component_columns(data), "composite_score")
+}
+
 .preset_scoring_weights <- list(
   standard = c(
     S_length   = 0.200,
@@ -326,12 +351,13 @@ NULL
 
 .abort <- function(message, ...,
                    class = NULL,
-                   call = rlang::caller_env()) {
+                   call = rlang::caller_env(),
+                   .envir = call) {
   cli::cli_abort(
     message, ...,
     class = c(class, "pepvet_error"),
     call = call,
-    .envir = call
+    .envir = .envir
   )
 }
 
@@ -344,6 +370,59 @@ NULL
   }
 
   invisible(data)
+}
+
+.columns_are_numeric <- function(data, columns) {
+  all(vapply(data[columns], is.numeric, logical(1L)))
+}
+
+.columns_are_finite <- function(data, columns) {
+  all(vapply(
+    data[columns],
+    function(values) {
+      is.numeric(values) &&
+        !anyNA(values) &&
+        all(is.finite(values))
+    },
+    logical(1L)
+  ))
+}
+
+.columns_are_in_unit_interval <- function(data, columns) {
+  all(vapply(
+    data[columns],
+    function(values) {
+      is.numeric(values) &&
+        !anyNA(values) &&
+        all(is.finite(values)) &&
+        all(values >= 0 & values <= 1)
+    },
+    logical(1L)
+  ))
+}
+
+.validate_nullable_title <- function(title, class, call) {
+  if (
+    !is.null(title) &&
+      (!is.character(title) || length(title) != 1L || is.na(title))
+  ) {
+    .abort(
+      "{.arg title} must be a single character string or {.val NULL}.",
+      class = class,
+      call = call,
+      .envir = rlang::current_env()
+    )
+  }
+
+  invisible(title)
+}
+
+.is_nonempty_file_path <- function(path) {
+  is.character(path) &&
+    length(path) == 1L &&
+    !is.na(path) &&
+    nzchar(trimws(path)) &&
+    !any(as.integer(charToRaw(path)) == 0L)
 }
 
 .bind_rows <- function(df_list) {

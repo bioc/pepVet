@@ -967,6 +967,40 @@ test_that("coverage scoring handles full, zero, partial, and overlap", {
   expect_identical(pepVet:::.score_coverage(overlapping), 1)
 })
 
+test_that("component scorers preserve supplied valid digest semantics", {
+  digest_result <- make_digest_result(
+    c("AAAAAAA", "CCCCCCCC"),
+    starts = c(1L, 8L)
+  )
+  supplied <- digest_result[2L, , drop = FALSE]
+
+  expect_identical(
+    .resolve_valid_digest(digest_result, c(20L, 25L), supplied),
+    supplied
+  )
+  expect_identical(
+    .resolve_valid_digest(digest_result, c(8L, 25L), NULL),
+    supplied
+  )
+  expect_equal(
+    .score_coverage(
+      digest_result,
+      length_range = c(20L, 25L),
+      valid_digest = supplied
+    ),
+    8 / 15
+  )
+  expect_identical(
+    .score_hydro(
+      digest_result,
+      gravy_range = c(-10, 10),
+      length_range = c(20L, 25L),
+      valid_digest = supplied
+    ),
+    1
+  )
+})
+
 test_that("coverage scoring reduces unsorted and adjacent intervals independently", {
   digest_result <- make_digest_result(
     rep(strrep("A", 10L), 5L),
