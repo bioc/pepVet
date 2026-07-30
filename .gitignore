@@ -13,15 +13,24 @@ tmp/
 /tests/testthat/Rplots.pdf
 
 # R session / IDE state
-.Rhistory
-.Rapp.history
+*.Rhistory
+*.rhistory
+*.Rapp.history
+*.rapp.history
 .RData
 .Ruserdata
-.Rproj.user/
+*.Rprofile
+*.rprofile
+*.Rproj
+*.rproj
+*.Rproj.user
+*.rproj.user
 
 # Local environment and secrets
-.Renviron
-.Renviron.site
+*.Renviron
+*.renviron
+*.Renviron.site
+*.renviron.site
 .env
 .env.*
 
@@ -35,6 +44,13 @@ src/*.dylib
 src/*.gcda
 src/*.gcno
 src/*.gcov
+*.o
+*.sl
+*.so
+*.dylib
+*.a
+*.dll
+*.def
 
 # Vignette and check outputs
 inst/doc/
@@ -42,6 +58,8 @@ Meta/
 vignettes/*.html
 vignettes/*.png
 vignettes/*.rds
+*.log
+*.aux
 docs/
 *.BiocCheck/
 
@@ -58,7 +76,22 @@ docker-compose.override.yml
 .docker/
 
 # Editor / OS noise
-.DS_Store
+*.DS_Store
+*.ds_store
 Thumbs.db
+*.backups
+*.cproject
+*.directory
+*.dropbox
+*.exrc
+*.gdb.history
+*.gitattributes
+*.gitmodules
+*.hgtags
+*.project
+*.seed
+*.settings
+*.tm_properties
+unsrturl.bst
 /doc/
 /Meta/
