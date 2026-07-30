@@ -26,6 +26,7 @@ Imports:
     rlang,
     tibble
 Suggests:
+    BiocStyle,
     ggplot2,
     patchwork,
     ragg,
@@ -37,6 +38,7 @@ VignetteBuilder: knitr
 biocViews: Proteomics, MassSpectrometry, QualityControl
 Encoding: UTF-8
 Config/Needs/build:
+    BiocStyle,
     ggplot2,
     knitr,
     patchwork,
@@ -54,6 +56,7 @@ Config/Needs/coverage:
 Config/Needs/lint:
     lintr
 Config/Needs/website:
+    BiocStyle,
     ggplot2,
     knitr,
     patchwork,

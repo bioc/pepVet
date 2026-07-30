@@ -3,7 +3,7 @@ title: "pepVet Compared to Other Tools"
 description: >
   A descriptive comparison of pepVet, MS-Digest, ExPASy PeptideMass, Protein Cleaver, ProteaseGuru, and PeptideRanger.
 output:
-  rmarkdown::html_vignette:
+  BiocStyle::html_document:
     toc: true
     toc_depth: 3
 vignette: >
@@ -54,6 +54,18 @@ verdict_fill <- c(
 Six tools in this comparison simulate or evaluate proteolytic digests. The analysis records peptide overlap for one BSA trypsin configuration, then describes scoring, filtering, ranking, structural context, and programmatic access.
 
 This vignette is package documentation, not paper evidence, an experimental validation, or a performance benchmark. It compares retained outputs and documented interfaces. The local artifacts do not retain service versions or retrieval dates for MS-Digest and PeptideMass, and the assessed Protein Cleaver source revision was not recorded. The capability entries therefore do not certify current-release equivalence.
+
+## Installation
+
+Install `pepVet` from Bioconductor with `BiocManager`. The package will become
+available through this command after it is accepted into Bioconductor:
+
+```{r install, eval = FALSE}
+if (!requireNamespace("BiocManager", quietly = TRUE)) {
+  install.packages("BiocManager")
+}
+BiocManager::install("pepVet")
+```
 
 ## Comparison basis
 

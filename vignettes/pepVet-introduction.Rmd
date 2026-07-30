@@ -3,7 +3,7 @@ title: "Getting Started with pepVet"
 description: >
   A walkthrough of pepVet's core pipeline from a single protein digest to multi-enzyme comparison, batch evaluation, and peptide export.
 output:
-  rmarkdown::html_vignette:
+  BiocStyle::html_document:
     toc: true
     toc_depth: 3
 vignette: >
@@ -22,6 +22,18 @@ data("aa_properties", package = "pepVet")
 ```
 
 pepVet evaluates proteolytic digests before acquisition. A protein sequence and enzyme produce peptide coordinates, score components, a composite label, and the resolved scoring parameters. The [tool comparison](pepVet-tool-comparison.html) describes differences between pepVet and five other digestion tools.
+
+## Installation
+
+Install `pepVet` from Bioconductor with `BiocManager`. The package will become
+available through this command after it is accepted into Bioconductor:
+
+```{r install, eval = FALSE}
+if (!requireNamespace("BiocManager", quietly = TRUE)) {
+  install.packages("BiocManager")
+}
+BiocManager::install("pepVet")
+```
 
 ## The core pipeline
 
