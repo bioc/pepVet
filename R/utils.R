@@ -1,9 +1,9 @@
 #' @importFrom tibble tibble as_tibble add_column
-#' @importFrom Biostrings AAString AAStringSet readAAStringSet
+#' @importFrom Biostrings AAStringSet readAAStringSet
 #' @importFrom IRanges start end
 #' @importFrom rlang check_installed caller_env
 #' @importFrom cli cli_abort cli_warn cli_inform cli_text
-#' @importFrom cli cat_line cat_rule symbol
+#' @importFrom cli cat_line
 #' @importFrom cli col_blue col_green col_red col_silver col_yellow
 #' @importFrom cli style_bold style_italic
 #' @importFrom stats rgamma
@@ -870,7 +870,7 @@ pepvet_preset <- function(type = "standard") {
       }
 
       fasta_sequences <- tryCatch(
-        Biostrings::readAAStringSet(sequence, format = "fasta"),
+        readAAStringSet(sequence, format = "fasta"),
         error = function(error) {
           .abort(
             c(

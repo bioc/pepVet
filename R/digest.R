@@ -261,7 +261,7 @@ digest_protein <- function(sequence,
   ## One batch call for all proteins instead of one Biostrings::AAString()
   ## conversion + one S4 cleavageRanges dispatch per protein.
   ## Returns an IRangesList with one IRanges element per protein.
-  all_strict_ranges <- cleaver::cleavageRanges(
+  all_strict_ranges <- cleavageRanges(
     normalized_input, enzym = normalized_enzyme
   )
 

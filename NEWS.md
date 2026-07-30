@@ -120,7 +120,7 @@
 
 * Standardised cli error messages across the package. Replaced all `paste0("{.arg ", var, "}")` patterns with `"{.arg {var}}"` cli glue syntax in `.abort()`, `cli_warn()`, and `cli_inform()` calls. Also converted `"i"` bullet `paste()` calls to `{.val {x}}` formatters.
 * Added `.bind_rows()` helper and replaced all bare `do.call(rbind, ...)` calls with it. The helper returns an empty tibble for empty input instead of failing silently.
-* Replaced `import(cleaver)` with `@importFrom cleaver cleavageRanges`. Removed the `.cleavage_ranges` workaround via `get("cleavageRanges", envir = asNamespace("cleaver"))` and now calls `cleaver::cleavageRanges()` directly.
+* Replaced `import(cleaver)` with `@importFrom cleaver cleavageRanges`. Removed the `.cleavage_ranges` workaround via `get("cleavageRanges", envir = asNamespace("cleaver"))` and now calls the formally imported `cleavageRanges()` function directly.
 * Removed dead code: `.compute_difficulty_flags()` in `evaluation.R` was defined but never called. Its logic was superseded by `.batch_difficulty_flags()`.
 * Made `plot_coverage_map()` gradient stops (`color_by = "hydrophobicity"`) data-driven instead of hardcoding the GRAVY valid-range boundary at 0.6. The 4 color stops are now evenly spaced across the actual GRAVY range of the displayed peptides.
 * Suppressed three R CMD check notes by adding `.lintr`, `tmp/`, and `paper/` to `.Rbuildignore`.
