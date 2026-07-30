@@ -1,5 +1,22 @@
 <!-- markdownlint-disable MD025 MD024 -->
 
+# pepVet 0.99.1
+
+## Bioconductor review updates
+
+* Adopted `BiocStyle` for both shipped vignettes and added Bioconductor installation instructions using `BiocManager`.
+* Documented the sources, limitations, and regeneration procedures for all files under `inst/extdata`.
+* Removed the tracked `.gitattributes` file and expanded the top-level `.gitignore` to cover files excluded from Bioconductor submissions.
+* Replaced redundant namespace qualification with formal imports where package code uses imported functions directly.
+
+## Performance and maintainability
+
+* Replaced nested missed-cleavage range construction with bulk index generation and used a shared difference-array implementation for sequence coverage and residue overlap counts.
+* Consolidated coverage calculations used by profile plots while preserving exact missed-cleavage filtering.
+* Vectorized adjacent pI fraction labels and midpoints.
+* Centralized score-column definitions and repeated validation for score values, titles, file paths, plot configuration keys, export columns, and valid peptide subsets.
+* Added regression tests for randomized digest ranges, interval coverage, mixed missed-cleavage plots, optional score columns, supplied valid-peptide subsets, and shared validation boundaries.
+
 # pepVet 0.99.0
 
 ## User-visible changes
